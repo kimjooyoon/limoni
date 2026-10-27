@@ -132,29 +132,46 @@ func TestChoiceLabelClipping(t *testing.T) {
 	}
 }
 
-func BenchmarkChoiceDrawTheme(b *testing.B) {
-	for _, widget := range choiceWidgets() {
-		for _, label := range []struct{ name, text string }{
-			{"short", "Choice"}, {"long", strings.Repeat("Choice", 8)},
-		} {
-			for _, focus := range []string{"normal", "focused"} {
-				b.Run(widget.name+"/"+label.name+"/"+focus, func(b *testing.B) {
-					area := cell.Rect{Width: 60, Height: 1}
-					buf := buffer.NewBuffer(area)
-					theme := widgets.DarkTheme()
-					ctx := cell.NewContext(area, theme.RoleStyle("surface"))
-					ctx.ThemeStyle = theme.RoleStyle
-					if focus == "focused" {
-						ctx.FocusedID = "choice"
-					}
-					w := widget.make(label.text, cell.Style{}, cell.Style{})
-					b.ReportAllocs()
-					b.ResetTimer()
-					for i := 0; i < b.N; i++ {
-						w.Draw(ctx, buf)
-					}
-				})
+func TestRadioLeadingLabelClusters(t *testing.T) {
+	for _, tc := range []struct {
+		label     string
+		separator string
+		nextX     uint16
+	}{
+		{"\u0301e", " \u0301", 4},
+		{"\u093ee", " \u093e", 4},
+		{"\U0001f3fbe", " \U0001f3fb", 5},
+		{"\u200de", " \u200d", 4},
+	} {
+		t.Run(tc.label, func(t *testing.T) {
+			area := cell.Rect{Width: 20, Height: 1}
+			buf := buffer.NewBuffer(area)
+			widgets.RadioButton{ID: "choice", Label: tc.label}.Draw(cell.NewContext(area, cell.Style{}), buf)
+			if got := cell.ClusterText(buf.CellAt(3, 0).Content); got != tc.separator {
+				t.Errorf("separator cluster = %q; want %q", got, tc.separator)
 			}
-		}
+			if got := buf.CellAt(tc.nextX, 0).Content; got != 'e' {
+				t.Errorf("cell %d = %q; want e", tc.nextX, got)
+			}
+		})
+	}
+}
+
+func BenchmarkChoiceDrawFocusedTheme(b *testing.B) {
+	for _, widget := range choiceWidgets() {
+		b.Run(widget.name, func(b *testing.B) {
+			area := cell.Rect{Width: 20, Height: 1}
+			buf := buffer.NewBuffer(area)
+			theme := widgets.DarkTheme()
+			ctx := cell.NewContext(area, theme.RoleStyle("surface"))
+			ctx.ThemeStyle = theme.RoleStyle
+			ctx.FocusedID = "choice"
+			w := widget.make("Choice", cell.Style{}, cell.Style{})
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				w.Draw(ctx, buf)
+			}
+		})
 	}
 }

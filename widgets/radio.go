@@ -62,11 +62,7 @@ func (rb RadioButton) Draw(ctx cell.Context, buf *buffer.Buffer) {
 		prefix = "(*) "
 	}
 
-	// Write separately so a long label does not allocate a combined string.
-	n := buf.SetStringWithin(ctx.Area.X, ctx.Area.Y, prefix, textStyle, ctx.Area.Width)
-	if n < ctx.Area.Width {
-		buf.SetStringWithin(ctx.Area.X+n, ctx.Area.Y, rb.Label, textStyle, ctx.Area.Width-n)
-	}
+	buf.SetStringWithin(ctx.Area.X, ctx.Area.Y, prefix+rb.Label, textStyle, ctx.Area.Width)
 }
 
 // SizeHint returns the single-row area the radio button needs, with its width.
