@@ -8,11 +8,13 @@ import (
 
 // Checkbox is an interactive box that can be ticked.
 type Checkbox struct {
-	ID           string
-	Checked      *bool
-	Label        string
-	Style        cell.Style
-	FocusedStyle cell.Style // unset: reverse bold
+	ID      string
+	Checked *bool
+	Label   string
+	Style   cell.Style
+	// FocusedStyle defaults to reverse bold, or the theme focus style when
+	// both styles are unset.
+	FocusedStyle cell.Style
 }
 
 // Draw draws the checkbox as [ ] or [x]; when clicked it takes the focus and toggles its state.
@@ -46,7 +48,11 @@ func (cb Checkbox) Draw(ctx cell.Context, buf *buffer.Buffer) {
 	// Merge the styles
 	textStyle := ctx.Style.Merge(cb.Style)
 	if isFocused {
-		textStyle = textStyle.Merge(focusStyle(cb.FocusedStyle))
+		focusedStyle := cb.FocusedStyle
+		if focusedStyle == (cell.Style{}) && cb.Style == (cell.Style{}) && ctx.ThemeStyle != nil {
+			focusedStyle = ctx.ThemeStyle("focus")
+		}
+		textStyle = textStyle.Merge(focusStyle(focusedStyle))
 	}
 
 	// Prepare the [ ] or [x] state text

@@ -8,12 +8,14 @@ import (
 
 // RadioButton is a radio button for choosing one option from a group.
 type RadioButton struct {
-	ID           string
-	Selected     *string
-	Value        string
-	Label        string
-	Style        cell.Style
-	FocusedStyle cell.Style // unset: reverse bold
+	ID       string
+	Selected *string
+	Value    string
+	Label    string
+	Style    cell.Style
+	// FocusedStyle defaults to reverse bold, or the theme focus style when
+	// both styles are unset.
+	FocusedStyle cell.Style
 }
 
 // Draw draws the radio button as ( ) or (*); when clicked it takes the focus and updates the group's selected value.
@@ -47,7 +49,11 @@ func (rb RadioButton) Draw(ctx cell.Context, buf *buffer.Buffer) {
 	// Merge the styles
 	textStyle := ctx.Style.Merge(rb.Style)
 	if isFocused {
-		textStyle = textStyle.Merge(focusStyle(rb.FocusedStyle))
+		focusedStyle := rb.FocusedStyle
+		if focusedStyle == (cell.Style{}) && rb.Style == (cell.Style{}) && ctx.ThemeStyle != nil {
+			focusedStyle = ctx.ThemeStyle("focus")
+		}
+		textStyle = textStyle.Merge(focusStyle(focusedStyle))
 	}
 
 	// Prepare the ( ) or (*) state text
